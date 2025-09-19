@@ -3,3 +3,5 @@
 ### 内置插件
 
 - [SystemManager 插件说明](./system_manager.md)
+
+- [GroupFilter 插件说明](./group_filter.md)
