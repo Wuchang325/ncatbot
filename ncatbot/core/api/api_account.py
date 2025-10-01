@@ -83,7 +83,11 @@ class AccountAPI(BaseAPI):
         result = await self.async_callback(
             "/send_like", {"user_id": user_id, "times": times}
         )
-        APIReturnStatus.raise_if_failed(result)
+        try:
+            APIReturnStatus.raise_if_failed(result)
+        except Exception:
+            return result
+        return result
 
     async def set_friend_add_request(
         self, flag: str, approve: bool, remark: str = None
