@@ -100,6 +100,48 @@ class SelfFilter(Hook):
         return "<SelfFilter>"
 
 
+class AtFilter(Hook):
+    """仅当消息 @了机器人时才放行。
+
+    通过 ``event.data.message`` 中的 ``At`` 段检测。
+    仅对消息事件生效（无 message 字段时放行）。
+
+    参数:
+        include_at_all: 是否把 @全体成员 也算作 @机器人（默认 False）
+    """
+
+    stage = HookStage.BEFORE_CALL
+
+    def __init__(self, *, include_at_all: bool = False, priority: int = 150):
+        self.include_at_all = include_at_all
+        self.priority = priority
+
+    async def execute(self, ctx: HookContext) -> HookAction:
+        data = ctx.event.data
+        message = getattr(data, "message", None)
+        self_id = getattr(data, "self_id", None)
+
+        # 非消息事件（无 message 字段），放行
+        if message is None or self_id is None:
+            return HookAction.CONTINUE
+
+        if not hasattr(message, "filter_at"):
+            return HookAction.CONTINUE
+
+        for at in message.filter_at():
+            if at.user_id == str(self_id):
+                return HookAction.CONTINUE
+            if self.include_at_all and at.user_id == "all":
+                return HookAction.CONTINUE
+
+        return HookAction.SKIP
+
+    def __repr__(self) -> str:
+        return (
+            f"<AtFilter(include_at_all={self.include_at_all})>"
+        )
+
+
 class PlatformFilter(Hook):
     """过滤事件平台 (qq / telegram / ...)
 
@@ -128,6 +170,7 @@ class PlatformFilter(Hook):
 group_only = MessageTypeFilter("group")
 private_only = MessageTypeFilter("private")
 non_self = SelfFilter()
+require_at = AtFilter()
 
 
 # ==================== 文本匹配 Hook ====================

@@ -33,6 +33,7 @@ from .registry import (
     add_hooks,
     get_hooks,
     # 内置 Hook (低级过滤)
+    AtFilter,
     MessageTypeFilter,
     PostTypeFilter,
     SubTypeFilter,
@@ -47,6 +48,7 @@ from .registry import (
     group_only,
     private_only,
     non_self,
+    require_at,
     startswith,
     keyword,
     regex,
@@ -103,6 +105,7 @@ __all__ = [
     "add_hooks",
     "get_hooks",
     # Registry — 内置 Hook
+    "AtFilter",
     "MessageTypeFilter",
     "PostTypeFilter",
     "SubTypeFilter",
@@ -116,6 +119,7 @@ __all__ = [
     "group_only",
     "private_only",
     "non_self",
+    "require_at",
     "startswith",
     "keyword",
     "regex",

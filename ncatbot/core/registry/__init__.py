@@ -24,6 +24,7 @@ from .hook import Hook, HookStage, HookAction, HookContext, add_hooks, get_hooks
 
 # 内置 Hook
 from .builtin_hooks import (
+    AtFilter,
     MessageTypeFilter,
     PostTypeFilter,
     SubTypeFilter,
@@ -38,6 +39,7 @@ from .builtin_hooks import (
     group_only,
     private_only,
     non_self,
+    require_at,
     startswith,
     keyword,
     regex,
@@ -81,6 +83,7 @@ __all__ = [
     "add_hooks",
     "get_hooks",
     # 内置 Hook (低级过滤)
+    "AtFilter",
     "MessageTypeFilter",
     "PostTypeFilter",
     "SubTypeFilter",
@@ -94,6 +97,7 @@ __all__ = [
     "group_only",
     "private_only",
     "non_self",
+    "require_at",
     "startswith",
     "keyword",
     "regex",
