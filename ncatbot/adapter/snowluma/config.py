@@ -46,6 +46,7 @@ class SnowLumaConfig(BaseModel):
     enable_update_check: bool = False
     use_lite_package: bool = False
     install_dir: str = ""
+    configured: bool = False
 
     @field_validator("ws_uri")
     @classmethod

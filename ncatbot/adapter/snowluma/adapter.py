@@ -86,7 +86,24 @@ class SnowLumaAdapter(BaseAdapter):
     # ------------------------------------------------------------
 
     async def setup(self) -> None:
-        await self._launcher.launch()
+        config_changed = await self._launcher.launch()
+        if config_changed:
+            self._save_config()
+
+    def _save_config(self) -> None:
+        """将 launcher 更新后的 ws_uri / ws_token 写回 config.yaml。"""
+        try:
+            mgr = get_config_manager()
+            for entry in mgr.config.adapters:
+                if entry.type == "snowluma":
+                    entry.config["ws_uri"] = self._config.ws_uri
+                    entry.config["ws_token"] = self._config.ws_token
+                    entry.config["configured"] = True
+                    break
+            mgr.save()
+            LOG.info("SnowLuma 配置已保存到 config.yaml")
+        except Exception as e:
+            LOG.warning("保存 SnowLuma 配置失败: %s", e)
 
     async def connect(self) -> None:
         uri = self._config.get_uri_with_token()

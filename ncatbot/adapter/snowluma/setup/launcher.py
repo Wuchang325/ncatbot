@@ -240,13 +240,21 @@ class SnowLumaLauncher:
             )
         LOG.info("SnowLuma 服务连接成功")
 
-    async def _setup_and_connect(self) -> None:
+    async def _setup_and_connect(self) -> bool:
+        """Setup 模式入口。
+
+        Returns
+        -------
+        bool
+            ``True`` 表示用户在交互阶段修改了 ws_uri / ws_token，
+            调用方（adapter）应将配置写回 config.yaml。
+        """
         LOG.debug("Setup 模式 — 检查 SnowLuma 状态...")
 
         # 已就绪：跳过启动
         if await self.is_service_ok():
             LOG.info("SnowLuma WebSocket 已在线，跳过环境准备")
-            return
+            return False
 
         # 平台校验
         try:
@@ -264,36 +272,103 @@ class SnowLumaLauncher:
 
         # 启动
         self.platform.start_snowluma()
-        LOG.info("SnowLuma 已启动 (UAC 进程)")
+        LOG.info("SnowLuma 已启动")
 
-        # 用户引导
+        # 已有配置时直接探针；首次配置时先快速探一次
+        config_changed = False
+        has_prior_config = self._config.configured or bool(self._config.ws_token)
+        if has_prior_config:
+            # 有历史配置：直接进入探针验证（带重试）
+            pass
+        else:
+            # 首次配置：快速探一次，通了就不打扰用户
+            try:
+                if await self._strict_probe():
+                    LOG.info("SnowLuma WebSocket 服务连接成功")
+                    return False
+            except NcatBotError:
+                raise
+            except Exception:
+                pass
+            await self._guide_and_collect_config()
+            config_changed = True
+
+        # 探针验证（带重试）
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                if await self._strict_probe():
+                    self._config.configured = True
+                    LOG.info("SnowLuma WebSocket 服务连接成功")
+                    return config_changed
+            except NcatBotError:
+                # Token 鉴权失败等配置错误：也允许重配
+                pass
+
+            if attempt < max_retries - 1:
+                remaining = max_retries - attempt - 1
+                LOG.warning("WebSocket 连接失败，还剩 %d 次重试机会", remaining)
+                await self._guide_and_collect_config()
+                config_changed = True
+
+        raise NcatBotError(
+            "SnowLuma WebSocket 连接失败，已用完重试次数。"
+            "请检查 SnowLuma WebUI 中 OneBot v11 配置后重新启动。"
+        )
+
+    async def _guide_and_collect_config(self) -> None:
+        """打印 WebUI 引导，等待用户按回车后收集 ws_uri / ws_token。"""
+        loop = asyncio.get_event_loop()
+
         webui_uri = self._config.webui_uri
         LOG.warning("=" * 60)
-        LOG.warning("请在浏览器打开 SnowLuma WebUI 完成首次配置:")
+        LOG.warning("请在浏览器打开 SnowLuma WebUI:")
         LOG.warning("    %s", webui_uri)
         LOG.warning("步骤:")
         LOG.warning("  1. 设置/确认登录密码")
-        LOG.warning("  2. 在 OneBot v11 控制台启用 WebSocket 服务 (端口与 ws_uri 一致)")
-        LOG.warning("  3. 扫码登录目标 QQ 账号")
-        LOG.warning(
-            "  4. 全部完成后，NcatBot 会自动检测 WebSocket 服务并连接 (%ds 超时)",
-            self._websocket_timeout,
-        )
+        LOG.warning("  2. 在 OneBot v11 控制台启用 WebSocket 服务")
+        LOG.warning("  3. 设置 access_token (可留空)")
+        LOG.warning("  4. 扫码登录目标 QQ 账号")
         LOG.warning("=" * 60)
 
-        # 等待 WS 就绪
-        await self.wait_for_service(self._websocket_timeout)
+        await loop.run_in_executor(None, lambda: input("\n完成后按回车继续..."))
+
+        # 收集 WebSocket 地址
+        default_uri = self._config.ws_uri
+        ws_uri = await loop.run_in_executor(
+            None,
+            lambda: input(
+                f"请输入 WebSocket 地址 (回车使用默认 {default_uri}): "
+            ).strip(),
+        )
+        if ws_uri:
+            self._config.ws_uri = ws_uri
+
+        # 收集 access_token
+        ws_token = await loop.run_in_executor(
+            None,
+            lambda: input("请输入 access_token (无密码直接回车): ").strip(),
+        )
+        if ws_token:
+            self._config.ws_token = ws_token
 
     # ------------------------------------------------------------
     # 主入口 / 工具
     # ------------------------------------------------------------
 
-    async def launch(self) -> None:
-        """根据 ``skip_setup`` 切换 connect / setup 流程。"""
+    async def launch(self) -> bool:
+        """根据 ``skip_setup`` 切换 connect / setup 流程。
+
+        Returns
+        -------
+        bool
+            ``True`` 表示用户在交互阶段修改了配置，调用方应持久化。
+        """
         if self._config.skip_setup:
             await self._connect_only()
+            return False
         else:
-            await self._setup_and_connect()
+            return await self._setup_and_connect()
 
     def stop(self) -> None:
         """供 ``BotClient.shutdown()`` 调用，停止本地 SnowLuma 进程。"""
