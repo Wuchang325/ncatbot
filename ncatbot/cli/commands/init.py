@@ -89,6 +89,20 @@ def _sanitize_plugin_name(name: str) -> str:
     return sanitized or "my_plugin"
 
 
+def _to_class_name(plugin_name: str) -> str:
+    """从插件名（合法标识符）派生入口类名。
+
+    生成 CamelCase 名称并以 Plugin 结尾，保证结果始终是合法的 Python 标识符
+    （数字开头时前置下划线），避免数字开头的用户名生成非法类名。
+    """
+    camel = "".join(part.capitalize() for part in plugin_name.split("_") if part)
+    if not camel.endswith("Plugin"):
+        camel += "Plugin"
+    if not camel or camel[0].isdigit():
+        camel = "_" + camel
+    return camel
+
+
 # ---------------------------------------------------------------------------
 # 各平台模板插件内容
 # ---------------------------------------------------------------------------
@@ -216,7 +230,7 @@ def _generate_template_plugin(
     """在 plugins/ 下生成以当前用户名命名的模板插件。"""
     username = getpass.getuser()
     plugin_name = _sanitize_plugin_name(username) + "_plugin"
-    class_name = plugin_name.title().replace("_", "") + "Plugin"
+    class_name = _to_class_name(plugin_name)
     plugins_dir = plugins_path / plugin_name
 
     if plugins_dir.exists():
