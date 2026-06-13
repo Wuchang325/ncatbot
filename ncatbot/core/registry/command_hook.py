@@ -91,7 +91,7 @@ class CommandHook(Hook):
             if not text.startswith(self.prefix):
                 return HookAction.SKIP
             # 去除前缀
-            text = text[len(self.prefix):].strip()
+            text = text[len(self.prefix) :].strip()
             if not text:
                 return HookAction.SKIP
 

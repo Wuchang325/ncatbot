@@ -225,7 +225,9 @@ class Registrar:
         def decorator(func: Callable) -> Callable:
             if not hasattr(func, "__hooks__"):
                 func.__hooks__ = []
-            func.__hooks__.append(CommandHook(*names, ignore_case=ignore_case, prefix=prefix))
+            func.__hooks__.append(
+                CommandHook(*names, ignore_case=ignore_case, prefix=prefix)
+            )
             return self.on("message", priority=priority, platform=platform, **metadata)(
                 func
             )
@@ -258,7 +260,9 @@ class Registrar:
             if not hasattr(func, "__hooks__"):
                 func.__hooks__ = []
             func.__hooks__.append(MessageTypeFilter("group"))
-            func.__hooks__.append(CommandHook(*names, ignore_case=ignore_case, prefix=prefix))
+            func.__hooks__.append(
+                CommandHook(*names, ignore_case=ignore_case, prefix=prefix)
+            )
             return self.on("message", priority=priority, platform=platform, **metadata)(
                 func
             )
@@ -291,7 +295,9 @@ class Registrar:
             if not hasattr(func, "__hooks__"):
                 func.__hooks__ = []
             func.__hooks__.append(MessageTypeFilter("private"))
-            func.__hooks__.append(CommandHook(*names, ignore_case=ignore_case, prefix=prefix))
+            func.__hooks__.append(
+                CommandHook(*names, ignore_case=ignore_case, prefix=prefix)
+            )
             return self.on("message", priority=priority, platform=platform, **metadata)(
                 func
             )

@@ -393,7 +393,9 @@ def format_usage(names: tuple, spec: _ParamSpec, prefix: str = "") -> str:
 # ======================= Usage 回复 =======================
 
 
-async def reply_usage(ctx: Any, names: tuple, spec: _ParamSpec, prefix: str = "") -> None:
+async def reply_usage(
+    ctx: Any, names: tuple, spec: _ParamSpec, prefix: str = ""
+) -> None:
     """尝试通过平台 API 回复命令用法说明。
 
     静默处理: api 不可用或调用失败时仅记录 WARNING。
