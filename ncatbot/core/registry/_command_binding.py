@@ -359,12 +359,17 @@ _TYPE_DISPLAY = {
 }
 
 
-def format_usage(names: tuple, spec: _ParamSpec) -> str:
+def format_usage(names: tuple, spec: _ParamSpec, prefix: str = "") -> str:
     """生成命令用法说明字符串。
 
     示例: ``用法: /ban <target: @用户> [duration: 整数 = 60]``
+
+    Args:
+        names: 命令名元组
+        spec: 参数规格
+        prefix: 命令前缀（可选）
     """
-    cmd = names[0]
+    cmd = f"{prefix}{names[0]}"
     parts = [f"用法: {cmd}"]
     for param in spec.params:
         anno = param.annotation
@@ -388,12 +393,18 @@ def format_usage(names: tuple, spec: _ParamSpec) -> str:
 # ======================= Usage 回复 =======================
 
 
-async def reply_usage(ctx: Any, names: tuple, spec: _ParamSpec) -> None:
+async def reply_usage(ctx: Any, names: tuple, spec: _ParamSpec, prefix: str = "") -> None:
     """尝试通过平台 API 回复命令用法说明。
 
     静默处理: api 不可用或调用失败时仅记录 WARNING。
+
+    Args:
+        ctx: HookContext
+        names: 命令名元组
+        spec: 参数规格
+        prefix: 命令前缀（可选）
     """
-    usage = format_usage(names, spec)
+    usage = format_usage(names, spec, prefix)
     api = getattr(ctx, "api", None)
     if api is None:
         return

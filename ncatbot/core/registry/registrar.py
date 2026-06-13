@@ -206,17 +206,26 @@ class Registrar:
         priority: int = 0,
         ignore_case: bool = False,
         platform: Optional[str] = None,
+        prefix: Optional[str] = None,
         **metadata: Any,
     ) -> Callable:
         """注册命令 handler (群+私聊)
 
         匹配 message.text，支持注解式参数绑定。
+
+        Args:
+            *names: 命令名（支持多个别名）
+            priority: 优先级，越大越先执行
+            ignore_case: 是否忽略大小写
+            platform: 平台过滤，None 接收所有平台
+            prefix: 命令前缀，如 "/"、"!" 等
+            **metadata: 附加元信息
         """
 
         def decorator(func: Callable) -> Callable:
             if not hasattr(func, "__hooks__"):
                 func.__hooks__ = []
-            func.__hooks__.append(CommandHook(*names, ignore_case=ignore_case))
+            func.__hooks__.append(CommandHook(*names, ignore_case=ignore_case, prefix=prefix))
             return self.on("message", priority=priority, platform=platform, **metadata)(
                 func
             )
@@ -229,18 +238,27 @@ class Registrar:
         priority: int = 0,
         ignore_case: bool = False,
         platform: Optional[str] = None,
+        prefix: Optional[str] = None,
         **metadata: Any,
     ) -> Callable:
         """注册群命令 handler
 
         组合 MessageTypeFilter("group") + CommandHook 匹配 + 参数绑定。
+
+        Args:
+            *names: 命令名（支持多个别名）
+            priority: 优先级，越大越先执行
+            ignore_case: 是否忽略大小写
+            platform: 平台过滤，None 接收所有平台
+            prefix: 命令前缀，如 "/"、"!" 等
+            **metadata: 附加元信息
         """
 
         def decorator(func: Callable) -> Callable:
             if not hasattr(func, "__hooks__"):
                 func.__hooks__ = []
             func.__hooks__.append(MessageTypeFilter("group"))
-            func.__hooks__.append(CommandHook(*names, ignore_case=ignore_case))
+            func.__hooks__.append(CommandHook(*names, ignore_case=ignore_case, prefix=prefix))
             return self.on("message", priority=priority, platform=platform, **metadata)(
                 func
             )
@@ -253,18 +271,27 @@ class Registrar:
         priority: int = 0,
         ignore_case: bool = False,
         platform: Optional[str] = None,
+        prefix: Optional[str] = None,
         **metadata: Any,
     ) -> Callable:
         """注册私聊命令 handler
 
         组合 MessageTypeFilter("private") + CommandHook 匹配 + 参数绑定。
+
+        Args:
+            *names: 命令名（支持多个别名）
+            priority: 优先级，越大越先执行
+            ignore_case: 是否忽略大小写
+            platform: 平台过滤，None 接收所有平台
+            prefix: 命令前缀，如 "/"、"!" 等
+            **metadata: 附加元信息
         """
 
         def decorator(func: Callable) -> Callable:
             if not hasattr(func, "__hooks__"):
                 func.__hooks__ = []
             func.__hooks__.append(MessageTypeFilter("private"))
-            func.__hooks__.append(CommandHook(*names, ignore_case=ignore_case))
+            func.__hooks__.append(CommandHook(*names, ignore_case=ignore_case, prefix=prefix))
             return self.on("message", priority=priority, platform=platform, **metadata)(
                 func
             )

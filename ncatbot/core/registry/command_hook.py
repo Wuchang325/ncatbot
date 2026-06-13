@@ -37,6 +37,7 @@ class CommandHook(Hook):
     匹配规则:
     - 统一前缀匹配 — 对消息预处理后首段 PlainText 分词,
       首 token 匹配命令名即触发（无论 handler 有无额外参数）
+    - 支持自定义命令前缀（如 "/"、"!" 等）
 
     参数绑定规则:
     - 消息段预处理: 首个 PlainText 移到最前, 解决 Reply 开头的消息
@@ -55,12 +56,14 @@ class CommandHook(Hook):
         *names: str,
         ignore_case: bool = False,
         priority: int = 95,
+        prefix: Optional[str] = None,
     ):
         if not names:
             raise ValueError("CommandHook 至少需要一个命令名")
         self.names = names
         self.ignore_case = ignore_case
         self.priority = priority
+        self.prefix = prefix
         self._sig_cache: Dict[int, Optional[_ParamSpec]] = {}
 
     async def execute(self, ctx: HookContext) -> HookAction:
@@ -83,7 +86,16 @@ class CommandHook(Hook):
         if not text:
             return HookAction.SKIP
 
-        # 3) 统一前缀匹配: tokenize 后首 token 匹配命令名
+        # 3) 检查前缀（如果配置了前缀）
+        if self.prefix is not None:
+            if not text.startswith(self.prefix):
+                return HookAction.SKIP
+            # 去除前缀
+            text = text[len(self.prefix):].strip()
+            if not text:
+                return HookAction.SKIP
+
+        # 4) 统一前缀匹配: tokenize 后首 token 匹配命令名
         matched_name = match_command_prefix(text, self.names, self.ignore_case)
         if matched_name is None:
             return HookAction.SKIP
@@ -119,7 +131,7 @@ class CommandHook(Hook):
                 matched_name,
                 func.__name__,
             )
-            await reply_usage(ctx, self.names, spec)
+            await reply_usage(ctx, self.names, spec, self.prefix or "")
             return HookAction.SKIP
 
         ctx.kwargs.update(kwargs)
